@@ -3,11 +3,17 @@
 
 ## Description
 
-This repository contains the official implementation of the paper **"Learning Simple Test-Time Environments for LLM Web Agents"**.
+This repository contains the official implementation of the paper **"Learning Simple Test-Time Environments for LLM Web Agents"**. 
 
-This repository is the public release of the paper and is intended solely to reproduce the experimental results reported in it. For all other content, please refer to the submission version.
+The project
+- Introduces **TTED**, a test-time learning framework for robust LLM web agents.
+- Decomposes complex environments into **simpler, task-relevant sub-environments**.
+- Enables more reliable exploration, self-assessment, and adaptation **without ground-truth labels**.
+- Improves **compositional generalization** across complex and realistic web environments.
 
 ![Overview of TTED](figure/TTED.png)
+
+This repository is the public release of the paper and is intended solely to reproduce the experimental results reported in it. For all other content, please refer to the submission version.
 
 > The preprint version is available in the `preprint` folder.
 
