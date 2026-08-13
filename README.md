@@ -353,6 +353,7 @@ See `evaluation/compwob+/README.md` for detailed evaluation instructions.
 | Test-Time Reinforcement Learning (TTRL)         | [Qwen3-8B-TTRL-WebArena](https://www.modelscope.cn/models/JunxuanLi/Qwen3-8B-TTRL-WebArena)         |
 | Test-Time Environment Decomposition (TTED)      | [Qwen3-8B-TTED-WebArena](https://www.modelscope.cn/models/JunxuanLi/Qwen3-8B-TTED-WebArena)         |
 
+We have included the real evaluation trajectories, record_\[modelname\].zip, from our paper Learning Simple Test-Time Environments for LLM Web Agents in the corresponding model repositories.
 ## Citation
 
 If you find the code useful, please cite the following paper:
