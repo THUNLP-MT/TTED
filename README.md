@@ -9,6 +9,8 @@ This repository is the public release of the paper and is intended solely to rep
 
 ![Overview of TTED](figure/TTED.png)
 
+> The preprint version is available in the `preprint` folder.
+
 ## Setup
 
 ### 1. Create a Python environment
@@ -350,6 +352,12 @@ See `evaluation/compwob+/README.md` for detailed evaluation instructions.
 If you find the code useful, please cite the following paper:
 
 ```bibtex
+@misc{li2026learning,
+  title  = {Learning Simple Test-Time Environments for LLM Web Agents},
+  author = {Junxuan Li and Zijun Liu and Ziyi Huang and Peng Li and Yuzhou Liu and Ming Yan and Yang Liu},
+  year   = {2026},
+  note   = {Preprint}
+}
 ```
 
 ## Acknowledgements
