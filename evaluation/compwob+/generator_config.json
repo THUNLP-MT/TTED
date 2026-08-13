@@ -1,0 +1,22 @@
+{
+  "controls": {
+    "button": 0,
+    "link": 1,
+    "list": 0,
+    "colorwheel": 1,
+    "checkboxes": 3,
+    "login": 1,
+    "highlightText": 0,
+    "editText": 0,
+    "readtable": 1,
+    "enterTime": 0,
+    "dialog": 0,
+    "widget": 0,
+    "option": 0
+  },
+  "tasks": [
+    "read_table",
+    "click_link"
+  ],
+  "new_file_name": "Gen-read_table-click_link.html"
+}

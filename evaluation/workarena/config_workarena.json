@@ -1,0 +1,26 @@
+{
+  "env": {
+    "AGENTLAB_EXP_ROOT": "{PROJECT_ROOT}/experiment_records_path/workarena",
+    "AGENT_ERROR_LOG_DIR": "{PROJECT_ROOT}/logs/agent_errors/workarena",
+    "AGENT_TOKENIZER_NAME": "{PROJECT_ROOT}/utils/tokenizer",
+
+    "OPENAI_API_KEY": "key",
+    "OPENAI_BASE_URL": "base_url",
+
+    "EVAL_OPENAI_API_KEY": "key",
+    "EVAL_OPENAI_API_BASE": "base_url",
+    "EVAL_MODEL_NAME": "qwen3-8b"
+  },
+
+  "study": {
+    "benchmark": "workarena_l1",
+    "comment": "TTED WorkArena evaluation",
+    "n_jobs": 5
+  },
+
+  "agent": {
+    "module": "evaluation.workarena.agents.TTED",
+    "class_name": "CustomAgentArgs",
+    "temperature": 0.0
+  }
+}

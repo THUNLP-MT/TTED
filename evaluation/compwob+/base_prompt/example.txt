@@ -1,0 +1,15 @@
+Task: click "Ok" button.
+Answer:
+1. clickxpath //button[text()="Ok"]
+
+Task: Select "Terri" from the list and click its submit button.
+Answer:
+1. clickxpath //select[@class='generated-select']
+2. clickxpath //option[text()="Terri"]
+3. clickxpath //button[@class='secondary-action list-submit']
+
+Task: Type the following text into the editor: "Bibendum vitae, adipiscing vitae." and press submit.
+Answer:
+1. clickxpath //div[@class='ql-editor ql-blank']
+2. type Bibendum vitae, adipiscing vitae.
+3. clickxpath //button[@id='editSubbtn']

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gen Task Template</title>
+
+  <!-- 核心样式/脚本：请根据实际项目结构调整路径 -->
+  <link rel="stylesheet" type="text/css" href="../core/core.css" />
+  <link rel="stylesheet" href="../core/jquery-ui/jquery-ui.min.css" />
+  <link rel="stylesheet" type="text/css" href="../common/special/text-editor/quill.snow.css" />
+
+  <script src="../core/core.js"></script>
+  <script src="../core/d3.v3.min.js"></script>
+  <script src="../core/jquery-ui/external/jquery/jquery.js"></script>
+  <script src="../core/jquery-ui/jquery-ui.min.js"></script>
+  <script src="../core/jscolor.min.js"></script>
+  <script src="../common/ui_utils.js"></script>
+  <script src="../common/special/text-editor/quill.min.js"></script>
+
+  <style>
+    /* 整体页面布局 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #wrap {
+      width: 160px;
+      height: 600px; /* 稍微加高以容纳所有动态元素 */
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+    /* 开始前的覆盖层 */
+    #sync-task-cover {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 160px;
+      height: 600px;
+      background-color: #111;
+      color: #eee;
+      text-align: center;
+      line-height: 210px;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 9999;
+    }
+    #sync-task-cover.transparent {
+      background-color: transparent;
+      color: transparent;
+      cursor: not-allowed;
+    }
+    /* 任务提示区域 */
+    #query {
+      background-color: yellow;
+      padding: 3px;
+      width: 150px;
+      height: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
+      margin-bottom: 5px;
+    }
+    /* 基本元素样式 */
+    button { margin-top: 5px; }
+    .generated-button { margin-right: 10px; }
+    .alink {
+      text-decoration: underline;
+      color: blue;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .secondary-action { margin-left: 25px; }
+    /* click_dialog任务样式 */
+    #dialog { height: auto !important; }
+    .ui-dialog { font-size: 10px; }
+    .ui-dialog .ui-dialog-titlebar { padding: 2px 3px; height: 15px; }
+    .ui-button { outline: 0; }
+    .ui-dialog .ui-dialog-content { padding: 0px; margin: 0 5px; }
+    /* choose_list 任务 */
+    .select-container { margin-top: 5px; }
+    .generated-select { margin-right: 10px; width: 150px; }
+    /* click_widget任务样式 */
+    #widgetContainer .widget { margin: 5px 0; }
+    #widgetContainer textarea { height: 20px; }
+    #widgetContainer input[type=text] { width: 120px !important; }
+    /* 确保widget中的按钮、复选框和单选按钮与文本左对齐 */
+    .widget label {
+      display: inline-block;
+      text-align: left;  /* 使文字和按钮左对齐 */
+      margin: 5px 0; /* 设置适当的间距 */
+    }
+
+    /* 样式化复选框 */
+    .widget-checkbox {
+      margin-right: 0px; /* 设置复选框和文本之间的间距 */
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+    }
+
+    /* 样式化单选按钮 */
+    .widget-radio {
+      margin-right: 5px; /* 设置单选按钮和文本之间的间距 */
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+    }
+
+    /* 如果需要增加按钮和文字之间的间距 */
+    .widget-radio + span,
+    .widget-checkbox + span {
+      margin-left: 5px; /* 文字与按钮之间的间距 */
+    }
+    /* use-colorwheel 任务 */
+    /* click_option任务样式 */
+    #optionContainer { margin-top: 5px; }
+    #optionContainer input[type="radio"] {
+      margin: 0;
+      width: 15px;
+      height: 15px;
+    }
+
+    /* click_checkboxes任务样式 */
+    .checkbox-block {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .checkbox-block input[type="checkbox"] {
+      margin: 0;
+      width: 15px;
+      height: 15px;
+    }
+    /* read_table 任务 */
+    #form { margin-left: 5px; }
+    .bold { font-weight: bold; }
+    input { width: 100px; }
+    table { font-family: arial, sans-serif; border-collapse: collapse; width: 148px; margin: 5px; }
+    td, th { border: 1px solid #bbb; text-align: left; padding: 1px; }
+    tr:nth-child(even) { background-color: #dddddd; }
+    /* highlight_text 任务 */
+    #textArea { margin-top: 10px; }
+    /* edit_text 任务 */
+    #editor { height: 75px; }
+    #editSubbtn { margin-left: 30px; margin-top: 5px; }
+    /* enter_time 任务 */
+    .time-input-group { margin-top: 10px; }
+    #enterTimeInput { width: 120px; }
+  </style>
+
+  <script>
+    //===========================================================================
+    // 配置与任务数组：启用所有 13 个任务
+    //===========================================================================
+    var config = {
+      environment_settings: {
+        button: 1,       // click_button：生成 5 个按钮
+        link: 1,         // click_link：生成 3 个链接
+        list: 1,         // choose_list：生成 1 个下拉列表
+        colorwheel: 1,   // use-colorwheel：启用颜色选择器
+        checkboxes: 1,   // click_checkboxes：生成 1 组复选框
+        login: 1,        // login_user：启用登录表单
+        highlightText: 1,// highlight_text：启用文本高亮区域
+        editText: 1,     // edit_text：启用文本编辑器
+        readtable: 1,    // read_table：启用表格读取任务
+        enterTime: 1,    // enter_time：启用时间输入任务
+        dialog: 1,       // click_dialog：启用对话框任务
+        widget: 1,       // click_widget：启用 widget 任务
+        option: 1        // click_option：启用 option 任务
+      }
+    };
+
+    var tasks = [
+      "click_button",
+      "click_link",
+      "click_checkboxes",
+      "click_option",
+      "login_user",
+      "click_widget",
+      "choose_list",
+      "use_colorwheel",
+      "highlight_text",
+      "read_table",
+      "edit_text",
+      "enter_time",
+      "click_dialog",
+    ];
+
+    // 调整单例任务最大值为1
+    function validateConfig(config, tasks) {
+      var singleComponents = ["colorwheel", "login", "highlightText", "editText", "readtable", "enterTime", "dialog", "widget", "option"];
+      singleComponents.forEach(function(comp) {
+        if (config.environment_settings[comp] > 1) {
+          config.environment_settings[comp] = 1;
+        }
+      });
+      var taskToConfigKey = {
+        "click_button": "button",
+        "click_link": "link",
+        "choose_list": "list",
+        "use_colorwheel": "colorwheel",
+        "click_checkboxes": "checkboxes",
+        "login_user": "login",
+        "highlight_text": "highlightText",
+        "edit_text": "editText",
+        "read_table": "readtable",
+        "enter_time": "enterTime",
+        "click_dialog": "dialog",
+        "click_widget": "widget",
+        "click_option": "option"
+      };
+      tasks.forEach(function(task) {
+        var key = taskToConfigKey[task];
+        if (key && config.environment_settings[key] < 1) {
+          config.environment_settings[key] = 1;
+        }
+      });
+      return config;
+    }
+    validateConfig(config, tasks);
+    core.EPISODE_MAX_TIME = 1000000;
+
+    // 全局环境变量，用于保存各任务生成的 DOM 元素
+    var ENV = {
+      buttons: [],           // click_button
+      links: [],             // click_link
+      selects: [],           // choose_list
+      selectOptions: [],
+      listSubmitButtons: [],
+      colorwheels: [],       // use-colorwheel，保存对象 { input, button }
+      checkboxesGroups: [],  // click_checkboxes，保存对象 { div, nboxes, labels, toClick, submitBtn }
+      paragraphs: [],        // highlight_text
+      highlightSubmit: null, 
+      loginForm: null,       // login_user
+      editor: null,          // edit_text
+      editorsubmit: null,
+      readTableContainer: null,  // read_table
+      readTableInput: null,
+      readTableSubmit: null,
+      enterTimeInput: null,   // enter_time
+      enterTimeSubmit: null,
+      dialog: null,          // click_dialog
+      widgets: [],           // click_widget：保存 widget 类型
+      optionContainer: null  // click_option
+    };
+
+    //===========================================================================
+    // 统一生成环境：所有任务在此函数中生成（减少辅助函数）
+    //===========================================================================
+    function generateEnvironment() {
+      var area = d3.select('#area');
+      area.html("");
+
+      // 重置 ENV 变量
+      ENV.buttons = []; ENV.links = []; ENV.selects = []; ENV.selectOptions = [];
+      ENV.listSubmitButtons = []; ENV.colorwheels = []; ENV.checkboxesGroups = [];
+      ENV.paragraphs = []; ENV.highlightSubmit = null; ENV.loginForm = null;
+      ENV.editor = null; ENV.editorsubmit = null; ENV.readTableContainer = null;
+      ENV.readTableInput = null; ENV.readTableSubmit = null; ENV.enterTimeInput = null;
+      ENV.enterTimeSubmit = null; ENV.dialog = null; ENV.widgets = []; ENV.optionContainer = null;
+
+      // --- click_button 部分 ---
+      var btnContainer = area.append('div').attr('id', 'buttonsContainer');
+      for (var i = 0; i < config.environment_settings.button; i++) {
+        var btnText = core.sample(['Click Me', 'Cancel', 'Next', 'Previous', 'Yes', 'No', 'Confirm', 'Decline', 'Start', 'Stop', 'Reset', 'Save', 'Load', 'Upload', 'Download', 'Send', 'Receive', 'Agree', 'Disagree']);
+        var btn = btnContainer.append('button').attr('class', 'generated-button').html(btnText);
+        ENV.buttons.push(btn);
+      }
+
+      // --- click_link 部分 ---
+      var linkContainer = area.append('div').attr('id', 'linksContainer');
+      for (var j = 0; j < config.environment_settings.link; j++) {
+        var numWords = core.randi(3, 6);
+        var linkText = ui_utils.generateWords(numWords);
+        var link = linkContainer.append('span').attr('class', 'alink').html(linkText);
+        ENV.links.push(link.node());
+      }
+
+      // --- choose_list 部分 ---
+      if (config.environment_settings.list > 0) {
+        var selectContainer = area.append('div').attr('class', 'select-container');
+        var sel = selectContainer.append('select')
+                                 .attr('class', 'generated-select')
+                                 .attr('id', 'options')
+                                 .style('width', '150px');
+        var dataItems = Math.random() < 0.5 ? ui_utils.PEOPLE_NAMES.slice() : ui_utils.COUNTRIES.slice();
+        core.shuffle(dataItems);
+        var opts = dataItems.slice(0, 5);
+        opts.forEach(function(opt) { sel.append('option').html(opt); });
+        ENV.selects.push(sel);
+        ENV.selectOptions.push(opts);
+        var listSubmitBtn = selectContainer.append('button')
+            .attr('class', 'secondary-action list-submit')
+            .attr('id','listsubbtn')
+            .html('Submit');
+        ENV.listSubmitButtons.push(listSubmitBtn);
+      }
+
+      // --- use-colorwheel 部分 ---
+      if (config.environment_settings.colorwheel > 0) {
+        var cwContainer = area.append('div');
+        var cwInput = cwContainer.append('input')
+            .attr('id', 'col')
+            .attr('class', 'jscolor')
+            .attr('data-jscolor', "{width:101, height:71, shadow:0, borderWidth:0, backgroundColor:'transparent', insetColor:'#000'}")
+            .attr('value', 'ab2567');
+        var cwBtn = cwContainer.append('button')
+            .attr('id', 'colSubmit')
+            .attr('class', 'secondary-action')
+            .style('margin-left', '10px')
+            .html('Submit');
+        ENV.colorwheels.push({ input: cwInput, button: cwBtn });
+        new jscolor(cwInput.node());
+      }
+
+      // --- click_checkboxes 部分 ---
+      if (config.environment_settings.checkboxes > 0) {
+        var cbContainer = area.append('div').attr('class', 'checkbox-block');
+        var nboxes = core.randi(2, 5);
+        var labels = [];
+        var toClick = [];
+        for (var k = 0; k < nboxes; k++) {
+          var lbl = ui_utils.generateString(3, 6);
+          labels.push(lbl);
+          var labelElem = cbContainer.append('label');
+          labelElem.append('input')
+                   .attr('type', 'checkbox')
+                   .attr('id', 'cb_' + k);
+          // 直接将文本追加到 label 内（注意：这里用 node().innerHTML 修改）
+          labelElem.node().innerHTML += lbl;
+          // 在 label 后面增加换行，与代码一一致
+          labelElem.append('br');
+          toClick.push(Math.random() < 0.5);
+        }
+        // 检查如果所有复选框都不需要点击，则随机选一个设为 true
+        if (!toClick.includes(true)) {
+          var randIndex = core.randi(0, nboxes - 1);
+          toClick[randIndex] = true;
+        }
+
+        var cbSubmitBtn = cbContainer.append('button')
+            .attr('class', 'secondary-action')
+            .attr('id', 'boxessubbtn')
+            .html('Submit');
+        ENV.checkboxesGroups.push({
+          div: cbContainer,
+          nboxes: nboxes,
+          labels: labels,
+          toClick: toClick,
+          submitBtn: cbSubmitBtn
+        });
+      }
+
+      // --- login_user 部分 ---
+      if (config.environment_settings.login > 0) {
+        var loginContainer = area.append('div').attr('id', 'loginContainer');
+        var loginDiv = loginContainer.append('div').attr('id', 'loginForm');
+        loginDiv.append('p').html('<label class="bold">Username</label> <input type="text" id="username" />');
+        loginDiv.append('p').html('<label class="bold">Password</label> <input type="password" id="password" />');
+        var loginsubbtn = loginDiv.append('button')
+            .attr('id', 'loginsubbtn')
+            .attr('class', 'secondary-action')
+            .html('Login');
+        ENV.loginForm = loginDiv;
+      }
+
+      // --- highlight_text 部分 ---
+      if (config.environment_settings.highlightText > 0) {
+        var textArea = area.append('div').attr('id', 'textArea');
+        textArea.append('p').html('Text area:');
+        var paragraphs = [];
+        for (var m = 0; m < 3; m++) {
+          var textLen = core.randi(5, 8);
+          var para = "";
+          var firstWord = true;
+          for (var n = 0; n < textLen; n++) {
+            var ri = core.randi(0, ui_utils.lorem_words.length);
+            var w = ui_utils.lorem_words[ri];
+            if (firstWord) { w = ui_utils.txtCapitalize(w); firstWord = false; }
+            if (Math.random() < 0.2) { para += w + '. '; firstWord = true; }
+            else { para += w + ' '; }
+          }
+          para = para.trim();
+          paragraphs.push(para);
+          textArea.append('p').html(para);
+        }
+        ENV.paragraphs = paragraphs;
+        var highlightSubmitBtn = area.append('button')
+            .attr('id', 'subbtn')  /* 保留原ID用于 highlight_text */
+            .attr('class', 'secondary-action')
+            .html('Submit');
+        ENV.highlightSubmit = highlightSubmitBtn;
+      }
+
+      // --- edit_text 部分 ---
+      if (config.environment_settings.editText > 0) {
+        var editorDiv = area.append('div').attr('id', 'editor');
+        var editSubmitBtn = area.append('button')
+            .attr('id', 'editSubbtn')
+            .attr('class', 'secondary-action')
+            .html('Submit');
+        ENV.editorsubmit = editSubmitBtn;
+        ENV.editor = new Quill('#editor', {
+          modules: {
+            toolbar: [
+              [{'color': []}],
+              ['bold', 'italic', 'underline']
+            ]
+          },
+          theme: 'snow'
+        });
+      }
+
+      // --- read_table 部分 ---
+      if (config.environment_settings.readtable > 0) {
+        var tableContainer = area.append('div').attr('id', 'tab');
+        tableContainer.html("");
+        var tableLists = [
+          ['Color', ui_utils.COLORS],
+          ['First name', ui_utils.PEOPLE_NAMES],
+          ['Last name', ui_utils.LAST_NAMES],
+          ['Country', ui_utils.COUNTRIES],
+          ['Gender', ui_utils.GENDERS],
+          ['Language', ui_utils.LANGUAGES],
+          ['Year of Birth', function() { return core.randi(1940, 2016).toString(); }],
+          ['Religion', ui_utils.RELIGIONS]
+        ];
+        core.shuffle(tableLists);
+        var targetRow = core.randi(0, 4);
+        var tbl = tableContainer.append('table');
+        var targetKey, targetVal;
+        for (var r = 0; r < 5; r++) {
+          var tr = tbl.append('tr');
+          var key = tableLists[r][0];
+          var candidates = tableLists[r][1];
+          var val;
+          if (Object.prototype.toString.call(candidates) === '[object Array]') {
+            val = core.sample(candidates);
+          } else {
+            val = candidates();
+          }
+          tr.append('td').html(key);
+          tr.append('td').html(val);
+          if (r === targetRow) { targetKey = key; targetVal = val; }
+        }
+        ENV.readTableTarget = { key: targetKey, val: targetVal };
+        var formDiv = area.append('div').attr('id', 'form');
+        formDiv.html("");
+        var inputField = formDiv.append('input').attr('type', 'text').attr('id', 'tt');
+        var readTableSubmitBtn = formDiv.append('button')
+            .attr('id', 'tablesubbtn') 
+            .attr('class', 'secondary-action')
+            .html('Submit');
+        ENV.readTableInput = inputField;
+        ENV.readTableSubmit = readTableSubmitBtn;
+      }
+
+      // --- enter_time 部分 ---
+      if (config.environment_settings.enterTime > 0) {
+        var timeGroup = area.append('div').attr('class', 'time-input-group');
+        ENV.enterTimeInput = timeGroup.append('input').attr('type', 'time').attr('id', 'enterTimeInput');
+        ENV.enterTimeSubmit = timeGroup.append('button')
+            .attr('id', 'enterTimeSubmit')
+            .attr('class', 'secondary-action')
+            .html('Submit');
+      }
+
+        // --- click_dialog 部分 ---
+      if (config.environment_settings.dialog > 0) {
+        var dialogContainer = area.append('div').attr('id', 'dialogContainer');
+        var dialogDiv = dialogContainer.append('div').attr('id', 'dialog');
+        ENV.dialog = dialogDiv;
+        dialogDiv.html('<p>' + ui_utils.generateWords(4, 8) + '</p>');
+        $('#dialog').dialog({
+          height: 70,
+          position: { my: 'center', at: 'center', of: document.getElementById('area') }
+        });
+        $('.ui-dialog-titlebar-close').attr('class', 'ui-button ui-corner-all ui-widget ui-button-icon-only ui-dialog-titlebar-close');
+        $('.ui-dialog').each(function(index, el) {
+          el.style.margin = core.randi(-10, 20) + 'px ' + core.randi(5, 25) + 'px';
+          el.style.width = core.randi(90, 120) + 'px';
+          el.style.height = core.randi(70, 100) + 'px';
+        });
+      }
+
+      // --- click_widget 部分 ---
+      var widgetContainer = area.append('div').attr('id', 'widgetContainer');
+      if (config.environment_settings.widget > 0) {
+        var ELEMENT_NAMES = ['radio', 'checkbox', 'text', 'textarea', 'button'];
+        var ELEMENT_HTML = {
+          'radio': {
+            'start': '<div class="widget"><label><input type="radio" class="widget-radio" data-type="radio" name="widgetRadio">',
+            'end': ' Radio</label></div>'
+          },
+          'checkbox': {
+            'start': '<div class="widget"><label><input type="checkbox" class="widget-checkbox" data-type="checkbox">',
+            'end': ' Checkbox</label></div>'
+          },
+          'text': {
+            'start': '<div class="widget"><input type="text" data-type="text" value="',
+            'end': '"></div>'
+          },
+          'textarea': {
+            'start': '<div class="widget"><textarea data-type="textarea">',
+            'end': '</textarea></div>'
+          },
+          'button': {
+            'start': '<div class="widget"><button data-type="button">',
+            'end': '</button></div>'
+          }
+        };
+        ENV.widgets = [];
+        // 遍历每种 widget 类型
+        ELEMENT_NAMES.forEach(function(elemName) {
+          // 生成一段随机文本作为 widget 内容
+          var randomText = ui_utils.generateString(1, 6);
+          // 拼接 HTML 模板生成完整结构
+          var widgetHTML = ELEMENT_HTML[elemName]['start'] + randomText + ELEMENT_HTML[elemName]['end'];
+          // 将生成的 widget 插入到 widgetContainer 中
+          widgetContainer.append('div')
+                        .html(widgetHTML);
+          // 保存当前 widget 的类型到 ENV.widgets 数组（用于任务目标随机选取）
+          ENV.widgets.push(elemName);
+        });
+      }
+
+      // --- click_option 部分 ---
+      if (config.environment_settings.option > 0) {
+        var optionContainer = area.append('div').attr('id', 'optionContainer');
+        ENV.optionContainer = optionContainer;
+        var optionsBox = optionContainer.append('div').attr('id', 'optionsBox');
+        var numOptions = core.randi(2, 7);
+        var optionNames = [];
+        for (var op = 0; op < numOptions; op++) {
+          var optName = ui_utils.generateString(2, 8);
+          var lab = optionsBox.append('label');
+          lab.append('input').attr('type', 'radio').attr('data-type', 'radio').attr('id', 'ch' + op).attr('name', 'optionRadio');
+          lab.append('span').text(optName);
+          optionsBox.append('br');
+          optionNames.push(optName);
+        }
+        optionContainer.append('button')
+            .attr('id', 'optionsubbtn')
+            .attr('class', 'secondary-action')
+            .html('Submit');
+      }
+    }
+
+    //===========================================================================
+    // 任务数据准备：为各任务生成目标数据
+    //===========================================================================
+    var taskData = {};
+    function prepareTasks() {
+      // Task: click_button
+      if (ENV.buttons.length > 0) {
+        var idxBtn = core.randi(0, ENV.buttons.length - 1);
+        taskData.button = { targetText: ENV.buttons[idxBtn].html() };
+      } else { taskData.button = { targetText: "undefined" }; }
+
+      // Task: click_link
+      if (ENV.links.length > 0) {
+        var idxLink = core.randi(0, ENV.links.length - 1);
+        taskData.link = { targetText: ENV.links[idxLink].textContent };
+      } else { taskData.link = { targetText: "undefined" }; }
+
+      // Task: choose_list
+      if (ENV.selects.length > 0) {
+        var sel = ENV.selects[0];
+        var opts = ENV.selectOptions[0];
+        if (opts.length > 0) {
+          var selIdx = core.randi(0, opts.length - 1);
+          taskData.select = { targetVal: opts[selIdx] };
+        } else { taskData.select = { targetVal: "undefined" }; }
+      } else { taskData.select = { targetVal: "undefined" }; }
+
+      // Task: use_colorwheel
+      if (ENV.colorwheels.length > 0) {
+        var ix = core.randi(0, ui_utils.COLORS.length - 1);
+        var desiredName = ui_utils.COLORS[ix];
+        var targetHex = ui_utils.colorNameToHex(desiredName);
+        taskData.color = { targetName: desiredName, targetHex: targetHex };
+      } else { taskData.color = { targetName: "undefined", targetHex: "#000000" }; }
+
+      // Task: click_checkboxes
+      if (ENV.checkboxesGroups.length > 0) {
+        var group = ENV.checkboxesGroups[0];
+        var neededLabels = [];
+        for (var i = 0; i < group.nboxes; i++) {
+          if (group.toClick[i]) { neededLabels.push(group.labels[i]); }
+        }
+        taskData.checkboxes = { neededLabels: neededLabels, toClick: group.toClick, groupIndex: 0 };
+      } else { taskData.checkboxes = { neededLabels: [], toClick: [], groupIndex: -1 }; }
+
+      // Task: login_user
+      if (ENV.loginForm) {
+        var user = core.sample(ui_utils.FIFTY_NAMES).toLowerCase();
+        var password = ui_utils.generateString(3, 6);
+        taskData.login = { username: user, password: password };
+        document.getElementById('username').value = "";
+        document.getElementById('password').value = "";
+      } else { taskData.login = { username: "undefined", password: "undefined" }; }
+
+      // Task: highlight_text
+      if (ENV.paragraphs.length > 0) {
+        var chosenParagraph = core.randi(0, ENV.paragraphs.length - 1);
+        taskData.highlight = { paragraphIndex: chosenParagraph, text: ENV.paragraphs[chosenParagraph] };
+      } else { taskData.highlight = { paragraphIndex: -1, text: "undefined" }; }
+
+      // Task: edit_text
+      if (config.environment_settings.editText > 0) {
+        taskData.editText = ui_utils.generateWords(3, 5);
+      } else { taskData.editText = "undefined"; }
+
+      // Task: read_table
+      if (ENV.readTableTarget) {
+        taskData.readTable = { key: ENV.readTableTarget.key, value: ENV.readTableTarget.val };
+      } else { taskData.readTable = { key: "undefined", value: "undefined" }; }
+
+      // Task: enter_time
+      if (config.environment_settings.enterTime > 0) {
+        var START_DATE = new Date(2016, 0, 1);
+        var END_DATE = new Date(2016, 11, 31);
+        var d = ui_utils.randomDate(START_DATE, END_DATE);
+        var readableTime = d.toLocaleTimeString().replace(/([\d]+:[\d]{2})(:[\d]{2})(.*)/, '$1$3');
+        taskData.enterTime = {
+          expected: ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2),
+          displayText: readableTime
+        };
+      } else { taskData.enterTime = { expected: "undefined", displayText: "undefined" }; }
+
+      // Task: click_dialog
+      // 不需要额外数据
+
+      // Task: click_widget
+      if (ENV.widgets && ENV.widgets.length > 0) {
+        var chosenWidget = core.sample(ENV.widgets);
+        taskData.widget = { targetType: chosenWidget };
+      } else { taskData.widget = { targetType: "undefined" }; }
+
+      // Task: click_option
+      if (ENV.optionContainer) {
+        var optionsBox = d3.select('#optionsBox');
+        optionsBox.html("");
+        var num = core.randi(2, 7);
+        var names = [];
+        for (var op = 0; op < num; op++) {
+          var name = ui_utils.generateString(2, 8);
+          names.push(name);
+          var lab = optionsBox.append('label');
+          lab.append('input').attr('type', 'radio').attr('data-type', 'radio').attr('id', 'ch' + op).attr('name', 'optionRadio');
+          lab.append('span').text(name);
+          optionsBox.append('br');
+        }
+        var chosenIdx = core.randi(0, num - 1);
+        taskData.option = { query: names[chosenIdx], index: chosenIdx };
+      }
+    }
+
+    //===========================================================================
+    // 构建任务提示语
+    //===========================================================================
+    function buildQueryString() {
+      var taskTemplates = {
+        "click_button": function() { return 'click on the button "' + taskData.button.targetText + '"'; },
+        "click_link": function() { return 'click on the link "' + taskData.link.targetText + '"'; },
+        "choose_list": function() { return 'select "' + taskData.select.targetVal + '" from the list and click its submit button'; },
+        "use_colorwheel": function() { return 'select the color "' + taskData.color.targetName + '" using the color picker and click its submit button'; },
+        "click_checkboxes": function() { 
+          return (taskData.checkboxes.neededLabels.length > 0 ?
+                  'check these boxes: ' + taskData.checkboxes.neededLabels.join(', ') :
+                  'check no boxes (leave them all unchecked)') + ' and click its submit button'; 
+        },
+        "login_user": function() { 
+          return 'type the username "' + taskData.login.username + '" and password "' + taskData.login.password + '" and press Login'; 
+        },
+        "highlight_text": function() { 
+          return 'highlight the entire ' + (taskData.highlight.paragraphIndex + 1) + 'th paragraph and click the submit button'; 
+        },
+        "edit_text": function() { 
+          return 'type the following text into the editor: "' + taskData.editText + '" and press submit'; 
+        },
+        "read_table": function() { 
+          return 'read the table and enter the value of <span class="bold">' + taskData.readTable.key + '</span> into the text field and press Submit'; 
+        },
+        "enter_time": function() { 
+          return 'enter the time "' + taskData.enterTime.displayText + '" into the time field and press submit'; 
+        },
+        "click_dialog": function() { 
+          return 'close the dialog box by clicking the "x"'; 
+        },
+        "click_widget": function() { 
+          return 'click on a "' + taskData.widget.targetType + '" widget'; 
+        },
+        "click_option": function() { 
+          return 'select radio button ' + taskData.option.query + ' and click Submit'; 
+        }
+      };
+      var segments = tasks.reduce(function(arr, task) {
+        if (typeof taskTemplates[task] === 'function') {
+          arr.push(taskTemplates[task]());
+        }
+        return arr;
+      }, []);
+      var query = segments.join(', and then ');
+      return query.charAt(0).toUpperCase() + query.slice(1);
+    }
+
+    //===========================================================================
+    // 清除所有事件绑定
+    //===========================================================================
+    function clearAllEventHandlers() {
+      ENV.buttons.forEach(function(btn) { btn.on('click', null); });
+      ENV.links.forEach(function(linkElem) { linkElem.onclick = null; });
+      ENV.listSubmitButtons.forEach(function(submitBtn) { submitBtn.on('click', null); });
+      ENV.colorwheels.forEach(function(cwObj) { cwObj.button.on('click', null); });
+      ENV.checkboxesGroups.forEach(function(group) { group.submitBtn.on('click', null); });
+      if (document.getElementById('loginsubbtn')) { document.getElementById('loginsubbtn').onclick = null; }
+      if (ENV.highlightSubmit) { ENV.highlightSubmit.on('click', null); }
+      if (ENV.editorsubmit) { ENV.editorsubmit.on('click', null); }
+      if (ENV.readTableSubmit) { ENV.readTableSubmit.on('click', null); }
+      if (ENV.enterTimeSubmit) { ENV.enterTimeSubmit.on('click', null); }
+      d3.select('#optionsubbtn').on('click', null);
+      d3.selectAll('#widgetContainer .widget').on('click', null);
+    }
+
+    //===========================================================================
+    // 执行任务流程：根据任务顺序依次绑定事件
+    //===========================================================================
+    function runTask(taskIndex) {
+      if (taskIndex >= tasks.length) {
+        core.endEpisode(1, true);
+        return;
+      }
+      clearAllEventHandlers();
+      var currentTask = tasks[taskIndex];
+
+      if (currentTask === "click_button") {
+        ENV.buttons.forEach(function(btn) {
+          btn.on('click', function() {
+            if (d3.select(this).html() === taskData.button.targetText) {
+              runTask(taskIndex + 1);
+            } else {
+              core.endEpisode(-1, false, "Wrong button clicked");
+            }
+          });
+        });
+      }
+      else if (currentTask === "click_link") {
+        ENV.links.forEach(function(linkElem) {
+          linkElem.onclick = function() {
+            if (this.textContent === taskData.link.targetText) {
+              runTask(taskIndex + 1);
+            } else {
+              core.endEpisode(-1, false, "Wrong link clicked");
+            }
+          };
+        });
+      }
+      else if (currentTask === "choose_list") {
+        var sel = ENV.selects[0];
+        var submitBtn = ENV.listSubmitButtons[0];
+        submitBtn.on('click', function(){
+          if (sel.node().value === taskData.select.targetVal) {
+            runTask(taskIndex + 1);
+          } else {
+            core.endEpisode(-1, false, "Wrong option selected");
+          }
+        });
+      }
+      else if (currentTask === "use_colorwheel") {
+        var cwObj = ENV.colorwheels[0];
+        cwObj.button.on('click', function() {
+          var col_selected = '#' + document.getElementById('col').value.toLowerCase();
+          var sel = ui_utils.hexToRgb(col_selected);
+          var des = ui_utils.hexToRgb(taskData.color.targetHex);
+          var r = 1.0 - (
+            Math.abs(sel.r - des.r)/255.0 +
+            Math.abs(sel.g - des.g)/255.0 +
+            Math.abs(sel.b - des.b)/255.0
+          )/3;
+          if (r >= 0.9) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Color mismatch"); }
+        });
+      }
+      else if (currentTask === "click_checkboxes") {
+        var groupIdx = taskData.checkboxes.groupIndex;
+        if (groupIdx < 0 || groupIdx >= ENV.checkboxesGroups.length) {
+          core.endEpisode(-1, false, "No checkbox group found");
+          return;
+        }
+        var group = ENV.checkboxesGroups[groupIdx];
+        var submitBtn = group.div.select("button#boxessubbtn");
+        submitBtn.on("click", function() {
+          var correctCount = 0;
+          var cbs = group.div.selectAll('input[type=checkbox]');
+          cbs[0].forEach(function(cbElem, idx) {
+            var isChecked = cbElem.checked;
+            var shouldCheck = taskData.checkboxes.toClick[idx];
+            if (isChecked === shouldCheck) { correctCount++; }
+          });
+          if (correctCount === group.nboxes) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Wrong checkboxes checked"); }
+        });
+      }
+      else if (currentTask === "login_user") {
+        var loginsubbtn = document.getElementById('loginsubbtn');
+        loginsubbtn.onclick = function() {
+          var typedUser = document.getElementById('username').value;
+          var typedPass = document.getElementById('password').value;
+          if (typedUser === taskData.login.username && typedPass === taskData.login.password) {
+            runTask(taskIndex + 1);
+          } else { core.endEpisode(-1, false, "Wrong username/password"); }
+        };
+      }
+      else if (currentTask === "highlight_text") {
+        ENV.highlightSubmit.on('click', function() {
+          var highlightedText = window.getSelection().toString().replace(/[\n\r\s]/g, '');
+          var compareTo = taskData.highlight.text.replace(/[\n\r\s]/g, '');
+          if (highlightedText === compareTo) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Wrong highlighted text"); }
+        });
+      }
+      else if (currentTask === "edit_text") {
+        ENV.editorsubmit.on('click', function() {
+          var userText = ENV.editor.getText().trim();
+          if (userText === taskData.editText) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Text editing incorrect"); }
+        });
+      }
+      else if (currentTask === "read_table") {
+        ENV.readTableSubmit.on('click', function() {
+          var userInput = d3.select('#tt').node().value;
+          if (userInput === taskData.readTable.value) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Wrong table value entered"); }
+        });
+      }
+      else if (currentTask === "enter_time") {
+        ENV.enterTimeSubmit.on('click', function() {
+          var inputTime = ENV.enterTimeInput.node().value;
+          if (inputTime === taskData.enterTime.expected) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Incorrect time entered"); }
+        });
+      }
+      else if (currentTask === "click_dialog") {
+        $('#dialog').dialog('option', 'close', function() {
+          $('#dialog').dialog('destroy');
+          d3.select('#dialog').html("");
+          runTask(taskIndex + 1);
+        });
+      }
+      else if (currentTask === "click_widget") {
+        $('#widgetContainer .widget').on('click', function() {
+          var elemType = $(this).find('input, textarea, button').attr('data-type');
+          if (elemType === taskData.widget.targetType) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Wrong widget clicked"); }
+        });
+      }
+      else if (currentTask === "click_option") {
+        d3.select('#optionsubbtn').on('click', function(){
+          var radioEl = d3.select('#ch' + taskData.option.index)[0][0];
+          if (radioEl && radioEl.checked) { runTask(taskIndex + 1); }
+          else { core.endEpisode(-1, false, "Wrong option selected"); }
+        });
+      }
+    }
+
+    function runSequentialTasks() {
+      generateEnvironment();
+      prepareTasks();
+      var queryStr = buildQueryString();
+      d3.select('#query').html(queryStr);
+      runTask(0);
+    }
+
+    core.startEpisodeReal = function() {
+      core.resetRefCode();
+      WOB_DONE_GLOBAL = false;
+      WOB_REWARD_GLOBAL = 0;
+      WOB_RAW_REWARD_GLOBAL = 0;
+      WOB_REWARD_REASON = null;
+      core.clearUserSelection();
+      core.canvasClear();
+      if (core.cover_div) { core.cover_div.style.display = 'none'; }
+      runSequentialTasks();
+      core.ept0 = new Date().getTime();
+      core.countdownTimer(core.EPISODE_MAX_TIME);
+      if (core.EP_TIMER !== null) { clearTimeout(core.EP_TIMER); }
+      core.EP_TIMER = setTimeout(function(){
+        core.endEpisode(-1, false, 'timed out');
+      }, core.EPISODE_MAX_TIME);
+    };
+
+    window.onload = function() { core.startEpisode(); };
+  </script>
+</head>
+<body>
+  <div id="wrap">
+    <div id="query"></div>
+    <div id="area"></div>
+  </div>
+</body>
+</html>

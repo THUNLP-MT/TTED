@@ -1,0 +1,37 @@
+{
+  "env": {
+    "BASE_URL": "webarena_website_base_url",
+
+    "AGENTLAB_EXP_ROOT": "{PROJECT_ROOT}/experiment_records_path/webarena",
+    "AGENT_ERROR_LOG_DIR": "{PROJECT_ROOT}/logs/agent_errors/webarena",
+    "AGENT_TOKENIZER_NAME": "{PROJECT_ROOT}/utils/tokenizer",
+
+    "WA_SHOPPING": "{BASE_URL}:8082/",
+    "WA_SHOPPING_ADMIN": "{BASE_URL}:8083/admin",
+    "WA_REDDIT": "{BASE_URL}:8080",
+    "WA_GITLAB": "{BASE_URL}:9001",
+    "WA_WIKIPEDIA": "{BASE_URL}:8081/wikipedia_en_all_maxi_2022-05/A/User:The_other_Kiwix_guy/Landing",
+    "WA_MAP": "{BASE_URL}:443",
+    "WA_HOMEPAGE": "{BASE_URL}:80",
+    "WA_FULL_RESET": "{BASE_URL}:7565",
+
+    "OPENAI_API_KEY": "key",
+    "OPENAI_BASE_URL": "base_url",
+
+    "EVAL_OPENAI_API_KEY": "key",
+    "EVAL_OPENAI_API_BASE": "base_url",
+    "EVAL_MODEL_NAME": "qwen3-8b"
+  },
+
+  "study": {
+    "benchmark": "webarena",
+    "comment": "TTED WebArena evaluation",
+    "n_jobs": 5
+  },
+
+  "agent": {
+    "module": "evaluation.webarena.agents.TTED",
+    "class_name": "CustomAgentArgs",
+    "temperature": 0.0
+  }
+}

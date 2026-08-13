@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environments
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+.env.*
+*.key
+
+# Logs
+logs/
+*.log
+
+record_submission/
+experiment_records_path/
+
+# Model weights
+models_to_upload/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
