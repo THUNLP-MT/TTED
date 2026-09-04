@@ -360,10 +360,13 @@ If you find the code useful, please cite the following paper:
 
 ```bibtex
 @misc{li2026learning,
-  title  = {Learning Simple Test-Time Environments for LLM Web Agents},
-  author = {Junxuan Li and Zijun Liu and Ziyi Huang and Peng Li and Yuzhou Liu and Ming Yan and Yang Liu},
-  year   = {2026},
-  note   = {Preprint}
+    title={Learning Simple Test-Time Environments for LLM Web Agents}, 
+    author={Junxuan Li and Zijun Liu and Ziyi Huang and Peng Li and Yuzhou Liu and Ming Yan and Yang Liu},
+    year={2026},
+    eprint={2608.29305},
+    archivePrefix={arXiv},
+    primaryClass={cs.CL},
+    url={https://arxiv.org/abs/2608.29305}, 
 }
 ```
 
